@@ -21,6 +21,7 @@
 #include <SDL2/SDL_ttf.h>
 
 #include <string.h>
+#include <stdio.h>
 
 
 ///fin des headers
@@ -41,35 +42,54 @@ SDL_Renderer* renderer;
 Mix_Chunk *wave;
 Mix_Music *music;
 SDL_Event event;
-#define KEYS 27
+#define KEYS 28
 typedef struct key_t{
     char letter;
     SDL_Keycode code; 
 }key_t;
 
 
-char level_text[100][50] = {
-    "tea s leaf are green",
-    "tuna is a fast fish",
-    "one powerhorse equal seven hundred watts",
-    "fin du niveau",
+char level_text[1000][50];
 
-    "tea s leaf are green",
-    "tuna is a fast fish",
-    "one powerhorse equal seven hundred watts",
-    "fin du niveau",
+void load_data()
+{
+    FILE *data_file = fopen("data.txt", "r");
 
-    "tea s leaf are green",
-    "tuna is a fast fish",
-    "one powerhorse equal seven hundred watts",
-    "fin du niveau",
+    char prev_chr;
+    int line_idx,i,j;
+    int chr_idx = 0;
+    i = j = 0;
+    while(1)
+    {
+        level_text[j][i] = getc(data_file);
+        if(level_text[j][i] == '\n' && prev_chr == '\n') {
+            level_text[j][i] = getc(data_file);
+        }
+        if (i > 49) {
+            printf("error line %d is too long\n", line_idx);
+            goto error;
+        }
+        if (level_text[j][i] == EOF) {
+            level_text[j][i] = 0;
+            break;
+        }
 
-    "tea s leaf are green",
-    "tuna is a fast fish",
-    "one powerhorse equal seven hundred watts",
-    "fin du niveau",
+        prev_chr = level_text[j][i];
 
-};
+        if (level_text[j][i] == '\n') {
+            level_text[j][i] = 0;
+            line_idx += 1;
+            j++;
+            i = -1;
+        }
+        i++;
+    }
+
+    //rewind (data_file);
+    //fseek (data_file , 0 , SEEK_SET);
+    error:
+    fclose(data_file);
+}
 
 #include "ui.h"
 
@@ -100,6 +120,7 @@ key_t key_table[KEYS] ={
     {'x',SDLK_x},
     {'y',SDLK_y},
     {'z',SDLK_z},
+    {'e',SDLK_2},
     {' ',SDLK_SPACE}
 
 };
@@ -112,7 +133,9 @@ int answer_check() {
         Mix_PlayChannel(-1, wave, 0);
         strcpy(quiz_box.text[0], level_text[idx]);
         if (time_bar.w > 400)
-            level_id=50;
+            level_id += 5;
+        if (time_bar.w > 300)
+            level_id += 1;
         time_bar.w = 610;
         time_checkpoint = SDL_GetTicks();
     } else { 
@@ -138,6 +161,7 @@ int answer_check() {
 
 int main(int argc, char**args)
 {
+    load_data();
     //demmarer sdl2
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO);
 
